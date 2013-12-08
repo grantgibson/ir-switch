@@ -1,11 +1,8 @@
-// Store current switch status 
-int myOn[6];
-
-// Store last sensor value
-int myLock[6];
+#include <avr/wdt.h>
 
 void setup() 
 { 
+  
    // Output to relay
    pinMode(2, OUTPUT); 
    pinMode(3, OUTPUT);
@@ -22,7 +19,7 @@ void setup()
    pinMode(12, OUTPUT); // Red 4
    pinMode(13, OUTPUT); // Red 5
    
-   // Set the relays to LOW to turn them off 
+   // Set the relays to turn them off 
    for (int thisPin = 2; thisPin <= 5; thisPin++) {
      digitalWrite(thisPin, HIGH);
    }
@@ -42,39 +39,57 @@ void setup()
    pinMode(A3, INPUT);
    pinMode(A4, INPUT);
    pinMode(A5, INPUT);
+   
+   Serial.begin(9600);
+   wdt_enable(WDTO_8S); // Enable the watchdog timer, 8 seconds
 } 
+
 void loop()
 {
+  wdt_reset(); // Tell the watchdog we're ok...
   for (int thisPin = 2; thisPin <= 5; thisPin++) {
+    Serial.println(thisPin);
     if(digitalRead(thisPin + 14) == LOW) {
       // Sensor is active, do something...
-      if(myLock[thisPin] == 0) {
-        // First time, action is unlocked so do it...
-        if(myOn[thisPin]) {
-          // Currently on, so turn off relay
-          digitalWrite(thisPin, HIGH);
-          // Turn off red LED, turn on blue
-          digitalWrite(thisPin+8, HIGH);
-          digitalWrite(thisPin+4, LOW);
-          // Store that this pin is off
-          myOn[thisPin] = 0;
-        } else {
-          // Currently off, so turn on relay
+      // First wait a moment, and see if it's still active
+      delay(250);
+      if(digitalRead(thisPin + 14) == LOW) {
+        // Sensor is still active, must be intentional
+        
+        if(digitalRead(thisPin) == HIGH) {
+          // Relay associated with the sensor is high (off) so change it...
           digitalWrite(thisPin, LOW);
-          // Turn off blue LED, turn on red
-          digitalWrite(thisPin+8, LOW);
-          digitalWrite(thisPin+4, HIGH);
-          // Store that this pin is on
-          myOn[thisPin] = 1;
+          digitalWrite(thisPin+4, HIGH);  // Blue off
+          digitalWrite(thisPin+8, LOW);   // Red on
+        } else {
+          digitalWrite(thisPin, HIGH);    // Relay off
+          digitalWrite(thisPin+4, LOW);   // Blue on
+          digitalWrite(thisPin+8, HIGH);  // Red off
+        } 
+        
+        // After the change, add another delay so we don't do too much...
+        delay(500);
+        if(digitalRead(thisPin + 14) == LOW) {
+          // User still has hand over sensor, so continue to wait...
+          delay(500);
         }
-        // Set the lock
-        myLock[thisPin] = 1;
-        delay(250);
+        if(digitalRead(thisPin + 14) == LOW) {
+          // User still has hand over sensor, so continue to wait...
+          delay(500);
+        }
+        if(digitalRead(thisPin + 14) == LOW) {
+          // User still has hand over sensor, so continue to wait...
+          delay(500);
+        }
+        if(digitalRead(thisPin + 14) == LOW) {
+          // User still has hand over sensor, so continue to wait...
+          delay(500);
+        }
+        if(digitalRead(thisPin + 14) == LOW) {
+          // User still has hand over sensor, so continue to wait...
+          delay(500);
+        }
       }
-    } else {
-      // When the sensor is inactive again, unset the lock
-      myLock[thisPin] = 0;
     }
   }
-
 }
